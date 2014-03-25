@@ -1,3 +1,4 @@
 tmp/*
 tests/[Cc]onfig.php
+tests/modx-update-one.php
 !empty
