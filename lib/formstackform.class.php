@@ -21,6 +21,12 @@ class FormStackForm {
     protected $id;
     
     /**
+     * @param (Array) $details ~ form details array(count=>id)
+     * @access protected
+     */
+    protected $details = null;
+    
+    /**
      * @param (Array) $field_names ~ array(name=>id)
      * @access protected
      */
@@ -49,12 +55,39 @@ class FormStackForm {
      */
     protected $debug = false;
     
-	function __construct(&$formStack, $id, $debug) {
+	function __construct(&$formStack, $id, $debug=false, $details=null) {
 		$this->formStack = &$formStack;
         $this->id = $id;
         $this->debug = $debug;
+        if ( !empty($details) ) {
+            $this->details = $details;
+        }
 	}
     
+    /**
+     * @return (INT) $form_id
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+    /**
+     * Get the form details https://www.formstack.com/developers/api/resources/form#form/:id_GET
+     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @description Get the form fields
+     * @return (Mixed) $response ~ Array for JSON, Object for XML or false if curl failed
+     */
+    public function getDetails($xml=false)
+    {
+        $response = $this->sendRequest('form', "GET", array('id' => $this->id), $xml);
+        $this->details = $response;
+        
+        if ( $this->loadFields($response['fields'],$xml) ) {
+            // report error?
+        }
+        
+        return $response;
+    }
     /**
      * @param (Boolean) $debug
      * @return (Void)
@@ -71,21 +104,48 @@ class FormStackForm {
      */
     public function getFields($xml=false)
     {
+        if ( !empty($this->fields) ) {
+            return $this->fields;
+        }
         $response = $this->sendRequest('field', "GET", array(), $xml);
         // map to array name=>id
-        if (!$xml && is_array($response) ) {
+        if ( $this->loadFields($response, $xml) ) {
+            return $this->fields;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Load the fields from the response data
+     * @param (Array) $fields
+     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @return (Boolean)
+     */
+    protected function loadFields($fields, $xml=false) {
+        if (!$xml && is_array($fields) ) {
             $this->field_names = $this->fields = array();
-            foreach ($response as $count => $field) {
+            foreach ($fields as $count => $field) {
                 $this->field_names[$field['name']] = $field['id'];
                 $this->fields[$field['id']] = $field;
             }
-            return $this->fields;
+            return true;
         } else if ($xml) {
             
         } 
         return false;
     }
-    
+    /**
+     * Get the Field Names/Labels and the FormStack Field ID
+     * @return (Array) $field_names ~ array(name => id)
+     */
+    public function getFieldNames()
+    {
+        if ( empty($this->field_names) ) {
+            $this->getFields();
+        }
+        return $this->field_names;
+    }
     /**
      * @param (String) $label ~ the form label
      * @return (INT) $form_field_id or null if not found
@@ -224,6 +284,7 @@ class FormStackForm {
                 foreach ($value as $k => $row) {
                     $api_data['search_field_'.$x] = $row['field'];
                     $api_data['search_value_'.$x] = $row['search'];
+                    $x++;
                 }
                 
             } else {
@@ -346,8 +407,8 @@ class FormStackForm {
                     // individual record:
                     $uri = $action.'/'.$item_id;
                 } else if ( $action == 'form') {
-                    // get form:
-                    $uri = $action.'/'.$this->id;
+                    // get all forms:
+                    $uri = $action.'/';
                 } else {
                     // get list:
                     $uri = 'form/'.$this->id.'/'.$action;

@@ -1,7 +1,7 @@
 <?php
 use \FormStack;
 /**
- * This file will get the get all submission data that was submitted from a Formstack form
+ * This file will get the form field names/labels and the associated FormStack field id
  *  
  */
 require_once '../config.php';
@@ -21,7 +21,7 @@ $config = array(
 $formStack = new \FormStack\FormStack($config);
 
 // print to screen:
-$formStack->setDebug();
+//$formStack->setDebug();
 
 /**
  * @param (INT) $example_form_id
@@ -32,24 +32,15 @@ $example_form_id;
 // load an existing form that you want submissions from:
 $form = $formStack->loadForm($example_form_id);
 
-// set time filter to retrieve from 21 days ago until 1 day ago:
-$form->setSubmissionsTimesFilter(time()-21*3600*24, time()-1*3600*24);
+$details = $form->getDetails();
 
-// add a search to an Event field: This will only get those with a quantity of 1 or 1*
-if ( !$form->setSubmissionsSearchFilter('basketball_june_day_camp__boys', 'quantity = 1') ) {
-    echo '<br>Invaild search filter: field';
-}
-
-// Only valid feilds will be sent
-if ( ! $form->setSubmissionsSearchFilter('Payment Confirmed', 'Yes') ) {
-    echo '<br>Invaild search filter: Payment Confirmed';
-}
-
-// get the data:
-$submissions = $form->getSubmissions(1);
+// unset the JS and HTML so we can just see the data:
+unset($details['javascript']);
+unset($details['html']);
 
 echo '<pre>';
-print_r($submissions);
+print_r($details);
 echo '</pre>';
+
 
 

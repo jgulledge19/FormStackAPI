@@ -1,6 +1,6 @@
 <?php
 namespace FormStack;
-
+require_once 'formstackform.class.php';
 /**
  * FormStack API v2
  * 
@@ -105,7 +105,7 @@ class FormStack {
      * 2. Sends curl request
      * 3. Shows response
      */ 
-    public function sendRequest($uri, $method="GET", $data, $xml=false)
+    public function sendRequest($uri, $method="GET", $data=array(), $xml=false)
     {
         /**
          * The Formstack API offers two response types: JSON (default) and XML. 
@@ -221,8 +221,23 @@ class FormStack {
      */
     public function loadForm($id)
     {
-        require_once 'formstackform.class.php';
         return new FormStackForm($this, $id, $this->debug);
+    }
+    /**
+     * Get Forms and load into objects
+     * @param (INT) $folders ~ Flag (0 or 1) to return forms in lists separated by folder 
+     * @return (Array=>object) $forms ~ array('Form Name' => $form(Object) )
+     */
+    public function getForms($folders=0)
+    {
+        $forms = $this->sendRequest('form/', 'GET', array('folders' => 0));
+        
+        $objects = array();
+        foreach ( $forms['forms'] as $count => $form) {
+            // can names repeat?
+            $objects[$form['name']] = new FormStackForm($this, $form['id'], $this->debug, $form);
+        }
+        return $objects;
     }
 }
 /*
