@@ -33,7 +33,7 @@ $example_form_id;
 $form = $formStack->loadForm($example_form_id);
 
 // set time filter to retrieve from 21 days ago until 1 day ago:
-$form->setSubmissionsTimesFilter(time()-21*3600*24, time()-1*3600*24);
+//$form->setSubmissionsTimesFilter(time()-21*3600*24, time()-1*3600*24);
 
 // add a search to an Event field: This will only get those with a quantity of 1 or 1*
 if ( !$form->setSubmissionsSearchFilter('basketball_june_day_camp__boys', 'quantity = 1') ) {
@@ -41,10 +41,11 @@ if ( !$form->setSubmissionsSearchFilter('basketball_june_day_camp__boys', 'quant
 }
 
 // Only valid feilds will be sent
+/*
 if ( ! $form->setSubmissionsSearchFilter('Payment Confirmed', 'Yes') ) {
     echo '<br>Invaild search filter: Payment Confirmed';
 }
-
+*/
 // get the data:
 $submissions = $form->getSubmissions(1);
 

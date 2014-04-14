@@ -35,6 +35,7 @@ class FormStackForm {
     /**
      * @param (Array) $fields ~ array(count=>id)
      * @access protected
+     * @TODO review, need type and other data to parse submissions to readable
      */
     protected $fields = null;
     
@@ -147,6 +148,21 @@ class FormStackForm {
         return $this->field_names;
     }
     /**
+     * Get the Field Names from the FormStack Field ID
+     * @param (INT) $field_id
+     * @return (String) $name 
+     */
+    public function getFieldName($id)
+    {
+        if ( empty($this->field_names) ) {
+            $this->getFields();
+        }
+        if ( !($name = array_search($id, $this->field_names)) ) {
+            return null;
+        }
+        return $name;
+    }
+    /**
      * @param (String) $label ~ the form label
      * @return (INT) $form_field_id or null if not found
      */
@@ -165,7 +181,88 @@ class FormStackForm {
         
         return $form_field_id;
     }
-    
+    /**
+     * @param (Array) $fields ~ array(label or ID => value )
+     *      sub fields should be like: name-first, name-last and address-address, address-city, ect. 
+     *              OR
+     *              As sub array ~ name => array(first => value, last => value)
+     * @param (INT) $timestamp ~ time that submission was created, default to current time
+     * @param (String) $user_agent ~ Browser user agent value that should be recorded for the submission
+     * @param (String) $remote_addr ~ IP address that should be recorded for the submission
+     * @param (String) $payment_status ~ Status of a payment integration
+     * @param (Tiny INT) $read ~ Flag (1 or 0) indicating the submission has a status of read
+     * Options: https://www.formstack.com/developers/api/resources/submission#form/:id/submission_POST
+     * @return (Mixed) $submission ID on success else false
+     */
+    public function addSubmission($fields, $timestamp=null, $user_agent=null, $remote_addr=null, $payment_status=null, $read=0)
+    {
+        if ( empty($this->fields) ) {
+            $this->getFields();
+        }
+        
+        $data = array();
+        if ( !empty($timestamp) ) {
+            $timestamp = time();
+            $data['timestamp'] = date('Y-m-d H:i:s', (int) $timestamp);//YYYY-MM-DD HH:MM:SS format is expected.
+        }
+        if ( $read == 1 ) {
+            $data['read'] = 1;
+        }
+        if ( !empty($user_agent) ) {
+            $data['user_agent'] = $user_agent;
+        }
+        if ( !empty($remote_addr) ) {
+            $data['remote_addr'] = $remote_addr;
+        }
+        if ( !empty($payment_status) ) {
+            $data['payment_status'] = $payment_status;
+        }
+        
+        // set defaults:
+        foreach ( $this->fields as $id => $field ) {
+            // do something with type?
+            switch ($field['type']) {
+                case 'product':
+                    // currently can not see other details
+                    break;
+                default:
+                    
+                    break;
+            }
+            $data['field_'.$id] = $field['default'];
+        }
+        
+        // now add to the data:
+        foreach ($fields as $label => $value) {
+            if ( is_array($value) ) {
+                foreach ( $value as $sub => $v ) {
+                    if ( !is_numeric($label)) {
+                        $label = $this->getFieldId($label);
+                    }
+                    $data['field_'.$label][$sub] = $v;
+                }
+            } else if ( is_numeric($label) ) {
+                $data['field_'.$label] = $value;
+            } else if ( strpos($label, '-') > 0) {
+                list($label, $sub) = explode('-', $label);
+                if ( !is_numeric($label)) {
+                    $label = $this->getFieldId($label);
+                }
+                if ( $label > 0 ) {
+                    $data['field_'.$label][$sub] = $value;
+                }
+            } else {
+                $id = $this->getFieldId($label);
+                if ( $id > 0 ){
+                    $data['field_'.$id] = $value;
+                }
+            }
+        }
+        
+        $response = $this->sendRequest('submission', "POST", $data, $xml=false);
+        return $response;
+        
+    }
     /**
      * Get one submission
      * @param (INT) $id ~ submission ID
@@ -489,5 +586,46 @@ class FormStackForm {
         }
         return $date;
     }
-    
+    /**
+     * @param (String) $value
+     * @param (String) $return ~ 'all', or key in parsed array
+     * @return (Mixed) $value or array('')
+     */
+    public function parseEventField($value, $return='quantity' )
+    {
+        // break appart:
+        $parts = explode("\n", $value);
+        if ( count($parts) == 4 ) { //
+            $data = array();
+            /**
+             * @TODO Review for other types
+             * charge_type = fixed_amount
+                quantity = 1
+                unit_price = 10
+                total = 10
+             */
+            if ( $parts[0] == 'charge_type = fixed_amount' ) {
+                list($t, $data['quantity']) = explode('quantity = ', $parts[1]);
+                list($t, $data['unit_price']) = explode('unit_price = ', $parts[2]);
+                list($t, $total['total']) = explode('total = ', $parts[3]);
+            } else if (  $parts[0] == 'fixed_amount' ) {
+                $data = array(
+                        'charge_type' => $parts[0],
+                        'quantity' => $parts[1],
+                        'unit_price' => $parts[2],
+                        'total' => $parts[3],
+                    );
+            }
+            if ( $return != 'all' && isset($data[$return]) ) {
+                return $data[$return];
+            } else if ( count($data) > 0 ) {
+                return $data;
+            }
+        }
+        // for name and address types:
+        $value = str_replace(array('first = ', 'last = ', 'address = ', 'city = ', 'state = ', 'zip = '), ' ', $value);
+        // remove new lines
+        $value = preg_replace('/\R/', ' ', $value);
+        return $value;
+    }
 }

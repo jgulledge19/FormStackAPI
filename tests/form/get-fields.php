@@ -33,7 +33,9 @@ $example_form_id;
 $form = $formStack->loadForm($example_form_id);
 
 $fields = $form->getFieldNames();
-
+foreach ($fields as $n => $id ) {
+    echo '"'.ucwords(str_replace('_', ' ', $n)).'":"'.$id.'",';
+}
 echo '<pre>';
 print_r($fields);
 echo '</pre>';
