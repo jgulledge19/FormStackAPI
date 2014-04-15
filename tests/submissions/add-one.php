@@ -42,6 +42,9 @@ $form = $formStack->loadForm($example_form_id);
  *  - Product Inventory is updated if using a limit
  *  - Products/Events have no defaults set so you need to do set them completly
  *  - field names are case insensitive, they are converted to proper format 
+ *  - Checkbox field types add \n to each option/value like: Value 1\nValue 2\nValue 3
+ *      And then if you use the other opiton it will look like this: Value 1\nOther: Value 4 
+ *  
  */
 $fields = array(
     'email' => 'test@email.com',
