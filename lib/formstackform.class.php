@@ -96,6 +96,7 @@ class FormStackForm {
     public function setDebug($debug=true)
     {
         $this->debug = $debug;
+        $this->formStack->setDebug($debug);
     }
     
     /**
