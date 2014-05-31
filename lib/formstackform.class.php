@@ -357,7 +357,7 @@ class FormStackForm {
         if ( !empty($page) ) {
             $this->submissions_filters['page'] = $page;
         }
-        if ( !empty($end) ) {
+        if ( !empty($per_page) ) {
             $this->submissions_filters['per_page'] = $per_page;
         }
     }
