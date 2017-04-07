@@ -1,33 +1,33 @@
 <?php
-use \FormStack;
+use \JGulledge\FormStack\API\FormStack;
 /**
  * This file will get the get all submission data that was submitted from a Formstack form
  * for a given form ID and matching any search criteria and then update a field(s) for 
  * each entry
  *  
  */
-require_once '../config.php';
+require_once dirname(dirname(__FILE__)).'/config.php';
 
 /**
- * @param (Array) $config ~ these are defined in config.php
+ * @param array $config ~ these are defined in config.php
  */
 $config = array(
-        'client_id'     => FormStack_client_id,
-        'client_secret' => FormStack_client_secret,
-        'redirect_url'  => 'https://www.example.com'.$_SERVER['PHP_SELF'],
-        'access_token'  => FormStack_access_token,
-        'api_key'       => FormStack_api_key,
-    );
+    'client_id'     => FormStack_client_id,
+    'client_secret' => FormStack_client_secret,
+    'redirect_url'  => 'https://www.example.com'.$_SERVER['PHP_SELF'],
+    'access_token'  => FormStack_access_token
+);
 
-
-$formStack = new \FormStack\FormStack($config);
+$formStack = new FormStack($config);
 
 // print to screen:
 $formStack->setDebug();
+// DO NOT set in production!
+$formStack->setInsecure();
 
 /**
- * @param (INT) $example_form_id
- * This is a vaild FormStack form ID
+ * @param int $example_form_id
+ * This is a valid FormStack form ID
  */
 $example_form_id;
 
@@ -53,7 +53,7 @@ if ( ! $form->setSubmissionsSearchFilter('Payment Confirmed', 'Yes') ) {
     echo '<br>Invaild search filter: Payment Confirmed';
 }
 
-// get all the submission data: Note it is up to you if you want to recieve the existing data or not
+// get all the submission data: Note it is up to you if you want to receive the existing data or not
 $submissions = $form->getSubmissions(1);
 
 if ( !empty($submissions) ) {
@@ -63,13 +63,13 @@ if ( !empty($submissions) ) {
         
         
         /**
-         * @param (Array) $update_data ~ The data that will be sent as label/field_id => new value
+         * @param array $update_data ~ The data that will be sent as label/field_id => new value
          */
         $update_data = array();
         
         /**
          * get existing field value 
-         * Note the returned array has the numberic field_id as a key so we have a lazy 
+         * Note the returned array has the numeric field_id as a key so we have a lazy
          * method to convert a label to a key 
          */
         $field_id = $form->getFieldId('Payment Confirmed');

@@ -24,9 +24,6 @@ define('FormStack_redirect_url', 'https://www.example.com');
 /** This is your FormStack access token */
 define('FormStack_access_token', '1234567890ABCDEFGHIJKLM' );
 
-/** This is your FormStack api key ~ not used for version 2 */
-define('FormStack_api_key', 'ABCDEFGHIJKLM1234567890' );
-
 /**
  * Example data:
  */
@@ -34,4 +31,4 @@ $example_form_id = 1695073;// 1645278
 $example_submission_id = 140969124;
 
 
-require_once dirname(dirname(__FILE__)).'/lib/formstack.class.php';
+require_once dirname(dirname(__FILE__)) . '/src/FormStack.php';

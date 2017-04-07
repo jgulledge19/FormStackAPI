@@ -1,43 +1,46 @@
 <?php
-use \FormStack;
+use \JGulledge\FormStack\API\FormStack;
 /**
  * This file will get the form field names/labels and the associated FormStack field id
  *  
  */
-require_once '../config.php';
+require_once dirname(dirname(__FILE__)).'/config.php';
 
 /**
- * @param (Array) $config ~ these are defined in config.php
+ * @param array $config ~ these are defined in config.php
  */
 $config = array(
         'client_id'     => FormStack_client_id,
         'client_secret' => FormStack_client_secret,
         'redirect_url'  => 'https://www.example.com'.$_SERVER['PHP_SELF'],
-        'access_token'  => FormStack_access_token,
-        'api_key'       => FormStack_api_key,
+        'access_token'  => FormStack_access_token
     );
 
 
-$formStack = new \FormStack\FormStack($config);
+$formStack = new FormStack($config);
 
 // print to screen:
 $formStack->setDebug();
+// DO NOT set in production!
+$formStack->setInsecure();
 
 /**
- * @param (INT) $example_form_id
+ * @param int $example_form_id
  * This is a vaild FormStack form ID
  */
-$example_form_id;
+//$example_form_id = 123;
 
 // load an existing form that you want submissions from:
 $form = $formStack->loadForm($example_form_id);
 
-$fields = $form->getFieldNames();
-foreach ($fields as $n => $id ) {
-    echo '"'.ucwords(str_replace('_', ' ', $n)).'":"'.$id.'",';
-}
+$details = $form->getDetails();
+
+// unset the JS and HTML so we can just see the data:
+unset($details['javascript']);
+unset($details['html']);
+
 echo '<pre>';
-print_r($fields);
+print_r($details);
 echo '</pre>';
 
 

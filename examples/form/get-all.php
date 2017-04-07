@@ -1,27 +1,28 @@
 <?php
-use \FormStack;
+use \JGulledge\FormStack\API\FormStack;
 /**
  * This file will get the form field names/labels and the associated FormStack field id
  *  
  */
-require_once '../config.php';
+require_once dirname(dirname(__FILE__)).'/config.php';
 
 /**
- * @param (Array) $config ~ these are defined in config.php
+ * @param array $config ~ these are defined in config.php
  */
 $config = array(
         'client_id'     => FormStack_client_id,
         'client_secret' => FormStack_client_secret,
         'redirect_url'  => 'https://www.example.com'.$_SERVER['PHP_SELF'],
-        'access_token'  => FormStack_access_token,
-        'api_key'       => FormStack_api_key,
+        'access_token'  => FormStack_access_token
     );
 
 
-$formStack = new \FormStack\FormStack($config);
+$formStack = new FormStack($config);
 
 // print to screen:
 $formStack->setDebug();
+// DO NOT set in production!
+$formStack->setInsecure();
 
 $forms = $formStack->getForms();
 

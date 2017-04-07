@@ -1,6 +1,8 @@
 <?php
-namespace FormStack;
-require_once 'formstackform.class.php';
+namespace JGulledge\FormStack\API;
+
+use JGulledge\FormStack\API\Forms;
+
 /**
  * FormStack API v2
  * 
@@ -21,12 +23,16 @@ require_once 'formstackform.class.php';
  */
 class FormStack {
 	/**
-     * @param (Array) $config ~ name=>value
+     * @param array $config ~ name=>value
      * @access Protected
      */
     protected $config = array();
+
+    /** @var bool  */
+    protected $insecure = false;
+
     /**
-     * @param (Boolean) $debug
+     * @param boolean $debug
      * @access Protected
      */
     protected $debug = false;
@@ -40,14 +46,19 @@ class FormStack {
             'redirect_url'  => '',
             'access_token'  => '',
             'api_url'       => 'https://www.formstack.com/api/v2/',
-            'api_key'       => '',
             'debug_hide_api_keys' => true,
             
         );
         $this->config = array_merge($this->config, $config);
-        
-        //print_r($this->config);
 	}
+
+    /**
+     * @param bool $insecure
+     */
+    public function setInsecure($insecure=true)
+    {
+        $this->insecure = $insecure;
+    }
     /**
      * Require user to authorize 
      */
@@ -84,10 +95,10 @@ class FormStack {
             exit;
         }
     }
-    
+
     /**
-     * @param (Boolean) $debug
-     * @return (Void)
+     * @param bool $debug
+     * @return void
      */
     public function setDebug($debug=true)
     {
@@ -95,16 +106,17 @@ class FormStack {
     }
         
     /**
-     * @param (String) $uri
-     * @param (String) $method
-     * @param (Array) $data ~ name => value 
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
-     * 
-     * @return (Mixed) $response ~ Array for JSON, Object for XML or false if curl failed
+     * @param string $uri
+     * @param string $method
+     * @param array $data ~ name => value
+     * @param boolean $xml ~ default is false(return JSON), if true return XML
+     *
+     * @return bool|mixed|\SimpleXMLElement ~ Array for JSON, Object for XML or false if curl failed
+     *
      * 1. Builds correct URL
      * 2. Sends curl request
      * 3. Shows response
-     */ 
+     */
     public function sendRequest($uri, $method="GET", $data=array(), $xml=false)
     {
         /**
@@ -122,8 +134,7 @@ class FormStack {
         }
         
         $data['access_token'] = $this->config['access_token'];
-        // verson 1
-        //$data['api_key'] = $this->config['api_key']; 
+
         try {
             $ch = curl_init();
             // For JSON ~ note need to review the POSTFIELDS below to use with JSON
@@ -132,8 +143,13 @@ class FormStack {
             }
             curl_setopt($ch, CURLOPT_HTTPHEADER, array(
                 'Authorization: Bearer ' . $this->config['access_token']
-            )); 
-            
+            ));
+            // ONLY USE ON DEV, otherwise fix your server
+            if ( $this->insecure) {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            }
+
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             /**
              * The Formstack API accepts two request data types: HTTP url encoded and JSON. 
@@ -198,7 +214,7 @@ class FormStack {
             print_r($e);
         }
         if ( !$response ) {
-            trigger_error(curl_error($ch)); 
+            trigger_error(curl_error($ch));
             return false;
         }
         if ( $xml ) {
@@ -215,51 +231,31 @@ class FormStack {
     protected function buildUrl() {
         
     }
+
     /**
-     * @param (INT) $id ~ the form ID
-     * @return (Object) $form ~ FormStackForm object
+     * @param int $id ~ the form ID
+     *
+     * @return \JGulledge\FormStack\API\Forms
      */
     public function loadForm($id)
     {
-        return new FormStackForm($this, $id, $this->debug);
+        return new Forms($this, $id, $this->debug);
     }
+
     /**
      * Get Forms and load into objects
-     * @param (INT) $folders ~ Flag (0 or 1) to return forms in lists separated by folder 
-     * @return (Array=>object) $forms ~ array('Form Name' => $form(Object) )
+     * @param int $folders ~ Flag (0 or 1) to return forms in lists separated by folder
+     * @return array ~ array('Form Name' => \JGulledge\FormStack\API\Forms )
      */
     public function getForms($folders=0)
     {
-        $forms = $this->sendRequest('form/', 'GET', array('folders' => 0));
+        $forms = $this->sendRequest('form/', 'GET', array('folders' => $folders));
         
         $objects = array();
         foreach ( $forms['forms'] as $count => $form) {
             // can names repeat?
-            $objects[$form['name']] = new FormStackForm($this, $form['id'], $this->debug, $form);
+            $objects[$form['name']] = new Forms($this, $form['id'], $this->debug, $form);
         }
         return $objects;
     }
 }
-/*
-$formStack = new FormStack();
-
- *  new form - POST
- *  
- 
-
-// list:
-$formStack->getForms();// list of forms
-
-$myForm = $formStack->loadForm('id...');
-**
- * GET
- * POST
- * /
-
-$myForm->getFields();
-$myForm->getSubmissions();
-
-$myForm->updateSubmission($id, $data);
-
-$myForm->runWebhooks();
-*/

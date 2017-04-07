@@ -1,58 +1,48 @@
 <?php
-namespace FormStack;
+namespace JGulledge\FormStack\API;
 /**
  * API for all FormSTack forms 
  *   
  */
- 
-/**
- * 
- */
-class FormStackForm {
+class Forms {
 	/**
      * @param formStack ~ (object) the connection class
-     * @access protected
      */
     protected $formStack = null;
+
     /**
-     * @param (INT) $id ~ form ID
-     * @access protected
+     * @param int $id ~ form ID
      */
     protected $id;
     
     /**
-     * @param (Array) $details ~ form details array(count=>id)
-     * @access protected
+     * @param array $details ~ form details array(count=>id)
      */
     protected $details = null;
     
     /**
-     * @param (Array) $field_names ~ array(name=>id)
-     * @access protected
+     * @param array $field_names ~ array(name=>id)
      */
     protected $field_names = null;
     
     /**
-     * @param (Array) $fields ~ array(count=>id)
-     * @access protected
+     * @param array $fields ~ array(count=>id)
      * @TODO review, need type and other data to parse submissions to readable
      */
     protected $fields = null;
     
     /**
-     * @param (Array) $submissions ~ array(submission_id=>data)
-     * @access protected
+     * @param array $submissions ~ array(submission_id=>data)
      */
     protected $submissions = null;
     
     /**
-     * @param (Array) $submissions_filters ~ array(api_argument=>value)
-     * @access protected
+     * @param array $submissions_filters ~ array(api_argument=>value)
      */
     protected $submissions_filters = array();
+
     /**
-     * @param (Boolean) $debug
-     * @access Protected
+     * @param boolean $debug
      */
     protected $debug = false;
     
@@ -66,17 +56,19 @@ class FormStackForm {
 	}
     
     /**
-     * @return (INT) $form_id
+     * @return int $form_id
      */
     public function getId()
     {
         return $this->id;
     }
+
     /**
      * Get the form details https://www.formstack.com/developers/api/resources/form#form/:id_GET
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @param boolean $xml ~ default is false(return JSON), if true return XML
      * @description Get the form fields
-     * @return (Mixed) $response ~ Array for JSON, Object for XML or false if curl failed
+     *
+     * @return mixed ~ Array for JSON, Object for XML or false if curl failed
      */
     public function getDetails($xml=false)
     {
@@ -90,8 +82,8 @@ class FormStackForm {
         return $response;
     }
     /**
-     * @param (Boolean) $debug
-     * @return (Void)
+     * @param boolean $debug
+     * @return void
      */
     public function setDebug($debug=true)
     {
@@ -100,9 +92,9 @@ class FormStackForm {
     }
     
     /**
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @param boolean $xml ~ default is false(return JSON), if true return XML
      * @description Get the form fields
-     * @return (Mixed) $response ~ Array for JSON, Object for XML or false if curl failed
+     * @return bool|array ~ Array for JSON, Object for XML or false if curl failed
      */
     public function getFields($xml=false)
     {
@@ -120,9 +112,9 @@ class FormStackForm {
     
     /**
      * Load the fields from the response data
-     * @param (Array) $fields
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
-     * @return (Boolean)
+     * @param array $fields
+     * @param boolean $xml ~ default is false(return JSON), if true return XML
+     * @return boolean
      */
     protected function loadFields($fields, $xml=false) {
         if (!$xml && is_array($fields) ) {
@@ -137,9 +129,10 @@ class FormStackForm {
         } 
         return false;
     }
+
     /**
      * Get the Field Names/Labels and the FormStack Field ID
-     * @return (Array) $field_names ~ array(name => id)
+     * @return array $field_names ~ array(name => id)
      */
     public function getFieldNames()
     {
@@ -148,10 +141,11 @@ class FormStackForm {
         }
         return $this->field_names;
     }
+
     /**
      * Get the Field Names from the FormStack Field ID
-     * @param (INT) $field_id
-     * @return (String) $name 
+     * @param int $id
+     * @return string|null $name
      */
     public function getFieldName($id)
     {
@@ -164,8 +158,8 @@ class FormStackForm {
         return $name;
     }
     /**
-     * @param (String) $label ~ the form label
-     * @return (INT) $form_field_id or null if not found
+     * @param string $label ~ the form label
+     * @return int|null
      */
     public function getFieldId($label)
     {
@@ -182,18 +176,19 @@ class FormStackForm {
         
         return $form_field_id;
     }
+
     /**
-     * @param (Array) $fields ~ array(label or ID => value )
+     * @param array $fields ~ array(label or ID => value )
      *      sub fields should be like: name-first, name-last and address-address, address-city, ect. 
      *              OR
      *              As sub array ~ name => array(first => value, last => value)
-     * @param (INT) $timestamp ~ time that submission was created, default to current time
-     * @param (String) $user_agent ~ Browser user agent value that should be recorded for the submission
-     * @param (String) $remote_addr ~ IP address that should be recorded for the submission
-     * @param (String) $payment_status ~ Status of a payment integration
-     * @param (Tiny INT) $read ~ Flag (1 or 0) indicating the submission has a status of read
+     * @param int $timestamp ~ time that submission was created, default to current time
+     * @param string $user_agent ~ Browser user agent value that should be recorded for the submission
+     * @param string $remote_addr ~ IP address that should be recorded for the submission
+     * @param string $payment_status ~ Status of a payment integration
+     * @param int $read ~ Flag (1 or 0) indicating the submission has a status of read
      * Options: https://www.formstack.com/developers/api/resources/submission#form/:id/submission_POST
-     * @return (Mixed) $submission ID on success else false
+     * @return int|bool $submission ID on success else false
      */
     public function addSubmission($fields, $timestamp=null, $user_agent=null, $remote_addr=null, $payment_status=null, $read=0)
     {
@@ -264,12 +259,13 @@ class FormStackForm {
         return $response;
         
     }
+
     /**
      * Get one submission
-     * @param (INT) $id ~ submission ID
-     * @param (String) $encryption_password ~ The encryption password for the form
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
-     * @return (Array) $data (name=>value)
+     * @param int $id ~ submission ID
+     * @param string $encryption_password ~ The encryption password for the form
+     * @param bool $xml ~ default is false(return JSON), if true return XML
+     * @return array $data (name=>value)
      */
     public function getSubmission($id, $encryption_password=null, $xml=false )
     {
@@ -296,11 +292,11 @@ class FormStackForm {
     
     
     /**
-     * @param (Mixed -INT/String) $start ~ (INT) UNIX timestamp, (String) YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+     * @param int|string $start ~ (INT) UNIX timestamp, (String) YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
      *      Set value to return submissions after given date/time 
-     * @param (Mixed -INT/String) $end ~ (INT) UNIX timestamp, (String) YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+     * @param int|string $end ~ (INT) UNIX timestamp, (String) YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
      *      Set value to return submissions before given date/time  
-     * @param (String) $timezone ~ the timezone of the $start and $end time
+     * @param string $timezone ~ the timezone of the $start and $end time
      * 
      * @return void
      */
@@ -315,9 +311,10 @@ class FormStackForm {
     }
     
     /**
-     * @param (Mixed -INT/String) $field ~ can be the ID or the label strtolower_label
-     * @param (String)
-     * @return (Boolean) true it has been verified and set, false field not found
+     * @param int|string $field ~ can be the ID or the label strtolower_label
+     * @param string $search
+     *
+     * @return bool true it has been verified and set, false field not found
      */
     public function setSubmissionsSearchFilter($field, $search)
     {
@@ -347,8 +344,8 @@ class FormStackForm {
         return true;
     }
     /**
-     * @param (INT) $per_page ~ The number of submissions to return per page
-     * @param (INT) $page ~ The total page number of results to return
+     * @param int $per_page ~ The number of submissions to return per page
+     * @param int $page ~ The total page number of results to return
      * 
      * @return void
      */
@@ -364,13 +361,13 @@ class FormStackForm {
     
     /**
      * get all submissions within filters
-     * @param (Boolean) $data ~ Include submission data
-     * @param (Boolean) $expand_data ~ Expand submission data
-     * @param (String) $sort ~ Sort the submissions by id with DESC or ASC
-     * @param (String $encryption_password ~ The encryption password for the form
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @param bool $data ~ Include submission data
+     * @param bool $expand_data ~ Expand submission data
+     * @param bool $sort ~ Sort the submissions by id with DESC or ASC
+     * @param string $encryption_password ~ The encryption password for the form
+     * @param bool $xml ~ default is false(return JSON), if true return XML
      * 
-     * @return (Array) $submissions ~ array(submission_id => data )
+     * @return array $submissions ~ array(submission_id => data )
      */
     public function getSubmissions($data=0, $expand_data=0, $sort='DESC', $encryption_password=null, $xml=false )
     {
@@ -411,12 +408,12 @@ class FormStackForm {
         return $this->submissions;
     }
     /**
-     * @param (INT) $id
-     * @param (Array) $fields (name=>value) the name can be the ID or the label
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @param int $id
+     * @param array $fields (name=>value) the name can be the ID or the label
+     * @param bool $xml ~ default is false(return JSON), if true return XML
      * 
      * Updating value of field(s)
-     * @return (Boolean) true - success, false - failed
+     * @return bool
      */
     public function updateSubmission($id, $fields, $xml=false)
     {
@@ -464,14 +461,14 @@ class FormStackForm {
     }
     
     /**
-     * @param (String) $action ~ form, field, submission, confirmation, notification, webhook
-     * @param (Sting) $method ~ GET, POST, PUT, DELETE
-     * @param (Array) $data ~ name => value 
-     * @param (Boolean) $xml ~ default is false(return JSON), if true return XML
+     * @param string $action ~ form, field, submission, confirmation, notification, webhook
+     * @param sting $method ~ GET, POST, PUT, DELETE
+     * @param array $data ~ name => value
+     * @param bool $xml ~ default is false(return JSON), if true return XML
      * 
-     * @return (Mixed) $response ~ Array for JSON, Object for XML or false if curl failed
+     * @return mixed $response ~ Array for JSON, Object for XML or false if curl failed
      * 
-     */ 
+     */
     protected function sendRequest($action, $method="GET", $data=array(), $xml=false)
     {
         $id = null;
@@ -484,10 +481,10 @@ class FormStackForm {
     }
     
     /**
-     * @param (String) $action ~ form, field, submission, confirmation, notification, webhook
-     * @param (Sting) $method ~ GET, POST, PUT, DELETE
-     * @param (INT) $item_id ~ the id for the type if nessicary
-     * @return (String) $uri
+     * @param string $action ~ form, field, submission, confirmation, notification, webhook
+     * @param sting $method ~ GET, POST, PUT, DELETE
+     * @param int $item_id ~ the id for the type if nessicary
+     * @return string $uri
      * 
      * https://www.formstack.com/developers/api/resources
      * should I make the methods CRUD for readable?  create, read, update, delete, copy, others?
@@ -555,9 +552,9 @@ class FormStackForm {
     /**
      * Set to FormStack expected time
      * PHP 5.3+
-     * @param (Mixed INT/Sting) $time
-     * @param (String) $timezone
-     * @return (String) $date ~ the expected date in proper format
+     * @param int|string $time
+     * @param string $timezone
+     * @return string $date ~ the expected date in proper format
      */
     protected function convertTime($time, $timezone=null)
     {
@@ -588,9 +585,10 @@ class FormStackForm {
         return $date;
     }
     /**
-     * @param (String) $value
-     * @param (String) $return ~ 'all', or key in parsed array
-     * @return (Mixed) $value or array('')
+     * @param string $value
+     * @param string $return ~ 'all', or key in parsed array
+     *
+     * @return array|mixed
      */
     public function parseEventField($value, $return='quantity' )
     {
