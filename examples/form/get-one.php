@@ -16,7 +16,7 @@ $config = array(
         'access_token'  => FormStack_access_token
     );
 
-
+/** @var \JGulledge\FormStack\API\FormStack $formStack */
 $formStack = new FormStack($config);
 
 // print to screen:
@@ -24,28 +24,18 @@ $formStack->setDebug();
 // DO NOT set in production!
 $formStack->setInsecure();
 
-$forms = $formStack->getForms();
+/** @param \JGulledge\FormStack\API\Forms */
+$myForm = $formStack->loadForm($example_form_id);
 
-if ( is_array($forms) ) {
-    foreach ($forms as $name => $formObject) {
-        /** @param \JGulledge\FormStack\API\Forms */
-        $formObject;
+echo 'ID: '.$myForm->getId();
 
-        $details = $formObject->getDetails();
-        unset($details['fields']);
-        //print_r($formObject->getFields());exit();
+$details = $myForm->getDetails();
+unset($details['fields']);
+unset($details['html']);
+//unset($details['javascript']);
 
-        echo '<h2>Form: '.$name.' and ID: '.$formObject->getId().'</h2>
-        <h3>Form Details</h3>';
-        print_r($details);
+print_r($details);
 
-        echo '<h3>Form Fields:</h3>
-        <pre>';
-        print_r($formObject->getFields());
-        echo '</pre>';
-                
-    }
-}
 
 
 
