@@ -5,9 +5,7 @@ namespace JGulledge\FormStack\API;
  *   
  */
 class Forms {
-	/**
-     * @param formStack ~ (object) the connection class
-     */
+	/** @var \JGulledge\FormStack\API\FormStack  */
     protected $formStack = null;
 
     /**
@@ -41,11 +39,22 @@ class Forms {
      */
     protected $submissions_filters = array();
 
+    /** @var array  */
+    protected $webhooks = [];
+
     /**
      * @param boolean $debug
      */
     protected $debug = false;
-    
+
+    /**
+     * Forms constructor.
+     *
+     * @param \JGulledge\FormStack\API\FormStack  $formStack
+     * @param int $id
+     * @param bool $debug
+     * @param null $details
+     */
 	function __construct(&$formStack, $id, $debug=false, $details=null) {
 		$this->formStack = &$formStack;
         $this->id = $id;
@@ -459,10 +468,148 @@ class Forms {
         }
         return false;
     }
-    
+
+    /**
+     * @param boolean $xml ~ default is false(return JSON), if true return XML
+     * @description Get the form webhooks
+     * @return bool|array ~ Array for JSON, Object for XML or false if curl failed
+     */
+    public function getWebhooks($xml=false)
+    {
+        if ( !empty($this->webhooks) ) {
+            return $this->webhooks;
+        }
+        $response = $this->sendRequest('webhook', "GET", array(), $xml);
+        // map to array name=>id
+        if ( isset($response['webhooks']) ) {
+            $this->webhooks = [];
+            foreach ($response['webhooks'] as $hook) {
+                $this->webhooks[$hook['id']] = $hook;
+            }
+            return $this->webhooks;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $name ~ Unique name for this Form's Webhook
+     * @param string $url ~ Your URL to process the form
+     * @param string $handshake
+     * @param array $params ~ Body Params @see https://developers.formstack.com/docs/form-id-webhook-post
+     *
+     * @return bool|array|\SimpleXMLElement
+     */
+    public function addWebhook($name, $url, $handshake, $params=[])
+    {
+        $data = [
+            'url' => $url,
+            'name' => $name,
+            'handshake_key' => $handshake,
+            'content_type' => (isset($params['content_type']) ? $params['content_type'] : 'json'),
+            'use_field_ids' => (isset($params['use_field_ids']) ? $params['use_field_ids'] : 1),
+            'no_subfield_names' => (isset($params['use_field_ids']) ? $params['use_field_ids'] : 0),
+            'include_field_type' => (isset($params['include_field_type']) ? $params['include_field_type'] : 1),
+        ];
+        // @TODO logic
+        // @see https://developers.formstack.com/v2.0/docs/field-logic
+
+        // add the webhook
+        $response = $this->sendRequest('webhook', "POST", $data, $xml=false);
+        if ($response && isset($response['id'])) {
+            $this->webhooks[$response['id']] = $response;
+        }
+        return $response;
+    }
+
+    /**
+     * @param int $id
+     * @param array $params ~ Body Params @see https://developers.formstack.com/docs/form-id-webhook-post
+     *
+     * @return bool|array|\SimpleXMLElement
+     */
+    public function updateWebhook($id, $params=[])
+    {
+        $allowed_columns = [
+            'url',
+            'name',
+            'handshake_key',
+            'content_type',
+            'use_field_ids',
+            'no_subfield_names',
+            'include_field_type',
+            'logic'
+        ];
+        $data = ['id' => $id];
+        foreach ($params as $column => $value) {
+            if ( in_array($column, $allowed_columns)) {
+                $data[$column] = $value;
+            }
+        }
+        return $this->sendRequest('webhook', "PUT", $data, $xml=false);
+    }
+
+    /**
+     * @param string $name
+     * @param array $params ~ Body Params @see https://developers.formstack.com/docs/form-id-webhook-post
+     *
+     * @return bool|array|\SimpleXMLElement
+     */
+    public function updateWebhookName($name, $params=[])
+    {
+        // does it exist:
+        $this->getWebhooks();
+        $hook_id = 0;
+        foreach ($this->webhooks as $h_id => $details) {
+            if ($details['name'] == $name) {
+                $hook_id = $h_id;
+                break;
+            }
+        }
+        if ( $hook_id > 0) {
+            return $this->updateWebhook($hook_id, $params);
+        } else {
+            return $this->addWebhook($details['url'], $name, $details['handshake_key'], $details);
+        }
+    }
+
+    /**
+     * @param int $id
+     * @param array $params ~ Body Params @see https://developers.formstack.com/docs/form-id-webhook-post
+     *
+     * @return bool|array|\SimpleXMLElement
+     */
+    public function deleteWebhook($id)
+    {
+        return $this->sendRequest('webhook', "DELETE", ['id' => $id], $xml=false);
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool|array|\SimpleXMLElement
+     */
+    public function deleteWebhookName($name)
+    {
+        // does it exist:
+        $this->getWebhooks();
+        $hook_id = 0;
+        foreach ($this->webhooks as $h_id => $details) {
+            if ($details['name'] == $name) {
+                $hook_id = $h_id;
+                break;
+            }
+        }
+        if ( $hook_id > 0) {
+            return $this->deleteWebhook($hook_id);
+        }
+        // does not exist
+        return false;
+    }
+
     /**
      * @param string $action ~ form, field, submission, confirmation, notification, webhook
-     * @param sting $method ~ GET, POST, PUT, DELETE
+     * @param string $method ~ GET, POST, PUT, DELETE
      * @param array $data ~ name => value
      * @param bool $xml ~ default is false(return JSON), if true return XML
      * 
@@ -482,8 +629,8 @@ class Forms {
     
     /**
      * @param string $action ~ form, field, submission, confirmation, notification, webhook
-     * @param sting $method ~ GET, POST, PUT, DELETE
-     * @param int $item_id ~ the id for the type if nessicary
+     * @param string $method ~ GET, POST, PUT, DELETE
+     * @param int $item_id ~ the id for the type if necessary
      * @return string $uri
      * 
      * https://www.formstack.com/developers/api/resources
