@@ -244,6 +244,9 @@ class Forms {
                     if ( !is_numeric($label)) {
                         $label = $this->getFieldId($label);
                     }
+                    if (!is_array($data['field_'.$label])) {
+                        $data['field_'.$label] = [];
+                    }
                     $data['field_'.$label][$sub] = $v;
                 }
             } else if ( is_numeric($label) ) {
